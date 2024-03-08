@@ -17,7 +17,7 @@ fun Event.toDomain() : DomainEvent {
     return (DomainEvent(
         id = id,
         name = name,
-        image = images.firstOrNull()?.url,
+        image = images.firstOrNull { it.ratio == "16_9" || it.ratio == "4_3" }?.url,
         type = type,
         url = url
     ))

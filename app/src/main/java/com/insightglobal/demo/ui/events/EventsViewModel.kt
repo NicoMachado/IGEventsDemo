@@ -40,9 +40,6 @@ class EventsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<EventsUiState>(Loading)
     val uiState: StateFlow<EventsUiState> = _uiState
 
-    var keyword: String by mutableStateOf("")
-        private set
-
     init {
         viewModelScope.launch {
             eventsRepository
