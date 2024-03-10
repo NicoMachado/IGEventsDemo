@@ -17,11 +17,16 @@
 package com.insightglobal.demo.ui.events
 
 import androidx.activity.ComponentActivity
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.activity.compose.setContent
+import androidx.compose.ui.test.junit4.createEmptyComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.insightglobal.demo.data.di.FAKE_EVENTS
+import com.insightglobal.demo.domain.DomainEvent
+import org.junit.After
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -34,18 +39,50 @@ import org.junit.runner.RunWith
 class EventsScreenTest {
 
     @get:Rule
-    val composeTestRule = createAndroidComposeRule<ComponentActivity>()
+    val composeTestRule = createEmptyComposeRule()
+
+//    @get:Rule
+//    val composeTestRule = createAndroidComposeRule<ComponentActivity>()
+    private lateinit var scenario: ActivityScenario<ComponentActivity>
 
     @Before
     fun setup() {
-        composeTestRule.setContent {
-            EventsScreen(FAKE_DATA.getOrThrow(), onSearch = {})
-        }
+        scenario = ActivityScenario.launch(ComponentActivity::class.java)
+//        composeTestRule.setContent {
+//            EventsScreen(FAKE_DATA.getOrThrow(), onSearch = {})
+//        }
+    }
+
+    @After
+    fun tearDown() {
+        scenario.close()
     }
 
     @Test
     fun firstItem_exists() {
+        initComposable(FAKE_DATA.getOrThrow())
         composeTestRule.onNodeWithText(FAKE_DATA.getOrThrow().first().name).assertExists().performClick()
+    }
+
+    @Test
+    fun testSearchInMainScreen() {
+        initComposable(FAKE_DATA.getOrThrow())
+        composeTestRule.onNodeWithContentDescription("Search", ignoreCase = true).assertExists()
+    }
+
+    @Test
+    fun testEmptyEventsScreen() {
+        initComposable(emptyList())
+
+        composeTestRule.onNodeWithContentDescription("Not Found", ignoreCase = true).assertExists()
+    }
+
+    private fun initComposable(events: List<DomainEvent>) {
+        scenario.onActivity { activity ->
+            activity.setContent {
+                EventsScreen()
+            }
+        }
     }
 }
 

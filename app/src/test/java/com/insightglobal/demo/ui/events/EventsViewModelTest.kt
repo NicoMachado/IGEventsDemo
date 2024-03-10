@@ -17,14 +17,22 @@
 package com.insightglobal.demo.ui.events
 
 
+import com.insightglobal.demo.MainDispatcherRule
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import com.insightglobal.demo.data.EventsRepository
+import com.insightglobal.demo.domain.DomainEvent
+import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.TestCoroutineDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runBlockingTest
+import org.junit.Rule
 
 /**
  * Example local unit test, which will execute on the development machine (host).
@@ -33,27 +41,71 @@ import com.insightglobal.demo.data.EventsRepository
  */
 @OptIn(ExperimentalCoroutinesApi::class) // TODO: Remove when stable
 class EventsViewModelTest {
-    @Test
-    fun uiState_initiallyLoading() = runTest {
-        val viewModel = EventsViewModel(FakeEventsRepository())
-        assertEquals(viewModel.uiState.first(), EventsUiState.Loading)
-    }
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule()
 
     @Test
-    fun uiState_onItemSaved_isDisplayed() = runTest {
-        val viewModel = EventsViewModel(FakeEventsRepository())
-        assertEquals(viewModel.uiState.first(), EventsUiState.Loading)
+    fun uiState_initiallyLoading() = runTest(UnconfinedTestDispatcher()) {
+
+        val expectedEvents = listOf(
+            DomainEvent(
+                id = "1",
+                name = "Event 1",
+                image = null,
+                type = "Type 1",
+                url = "url"
+            )
+        )
+        val testResults = mutableListOf<EventsUiState>()
+        val job = launch(UnconfinedTestDispatcher()) {
+            val viewModel = EventsViewModel(MockEventsRepository())
+            viewModel.uiState.toList( testResults )
+        }
+
+        assertEquals(2, testResults.size)
+        assertEquals(EventsUiState.Loading, testResults.first() )
+        assertEquals(EventsUiState.Success(expectedEvents, ""), testResults.last() )
+        job.cancel()
+
+    }
+
+
+    @Test
+    fun searchSuccessUpdatesUiState() = runTest {
+        val mockRepository = MockEventsRepository()
+        val viewModel = EventsViewModel(mockRepository)
+
+        val keyword = "test"
+        viewModel.onEvent(EventsEvent.Search(keyword))
+
+        advanceUntilIdle()
+
+        val expectedEvents = listOf(
+            DomainEvent(
+                id = "1",
+                name = "Event 1",
+                image = null,
+                type = "Type 1",
+                url = "url"
+            )
+        )
+        assertEquals(EventsUiState.Success(expectedEvents, keyword), viewModel.uiState.first())
     }
 }
 
-private class FakeEventsRepository : EventsRepository {
+private class MockEventsRepository : EventsRepository {
+    private val data = mutableListOf<DomainEvent>(DomainEvent(
+        id = "1",
+        name = "Event 1",
+        image = null,
+        type = "Type 1",
+        url = "url"
+    ))
 
-    private val data = mutableListOf<String>()
-
-    override val eventss: Flow<List<String>>
-        get() = flow { emit(data.toList()) }
-
-    override suspend fun add(name: String) {
-        data.add(0, name)
+    override suspend fun getEventsByKeyword(keyword: String?): Result<List<DomainEvent>> {
+        return Result.success(
+            data
+        )
     }
 }

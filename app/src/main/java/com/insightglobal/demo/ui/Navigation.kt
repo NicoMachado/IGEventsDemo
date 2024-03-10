@@ -31,7 +31,9 @@ fun MainNavigation() {
     val navController = rememberNavController()
 
     NavHost(navController = navController, startDestination = "main") {
-        composable("main") { EventsScreen(modifier = Modifier.fillMaxSize()) }
+        composable("main") {
+            EventsScreen(modifier = Modifier.fillMaxSize())
+        }
         // TODO: Add more destinations
     }
 }

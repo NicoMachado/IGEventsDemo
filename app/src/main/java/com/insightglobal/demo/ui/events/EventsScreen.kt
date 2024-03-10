@@ -17,7 +17,7 @@
 package com.insightglobal.demo.ui.events
 
 import android.util.Log
-import androidx.compose.foundation.background
+import android.widget.Toast
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -31,29 +31,24 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarColors
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -64,8 +59,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -77,12 +77,24 @@ import coil.compose.AsyncImagePainter
 import com.insightglobal.demo.R
 import com.insightglobal.demo.domain.DomainEvent
 import com.insightglobal.demo.ui.theme.MyApplicationTheme
-import kotlin.math.log
+import me.saket.swipe.SwipeAction
+import me.saket.swipe.SwipeableActionsBox
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EventsScreen(modifier: Modifier = Modifier, viewModel: EventsViewModel = hiltViewModel()) {
     val items by viewModel.uiState.collectAsStateWithLifecycle()
+    var showToast by rememberSaveable { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    if (showToast) {
+        Toast.makeText(
+             context,
+            "Hire me! And your ticket will be added to cart",
+            Toast.LENGTH_LONG
+        ).show()
+        showToast = false
+    }
 
     Scaffold(modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -103,13 +115,21 @@ fun EventsScreen(modifier: Modifier = Modifier, viewModel: EventsViewModel = hil
         EventsContent(
             items = items,
             modifier = modifier.padding(padding),
-            onSearch = { viewModel.onEvent(EventsEvent.Search(it)) })
+            onSearch = { viewModel.onEvent(EventsEvent.Search(it)) },
+            onSwipe = {
+                Log.d("EventsScreen", "Swipe action")
+                showToast = true }
+        )
 
     }
 }
 
 @Composable
-fun EventsContent(items: EventsUiState, modifier: Modifier, onSearch: (String) -> Unit) {
+fun EventsContent(
+    items: EventsUiState, modifier: Modifier,
+    onSearch: (String) -> Unit,
+    onSwipe: () -> Unit
+) {
     if (items is EventsUiState.Loading) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(
@@ -129,6 +149,8 @@ fun EventsContent(items: EventsUiState, modifier: Modifier, onSearch: (String) -
             events = (items as EventsUiState.Success).data,
             search = items.keyword,
             onSearch = { onSearch(it) },
+            onSwipe = { onSwipe()
+                Log.d("EventsScreen", "onSwipe") },
             modifier = modifier
         )
     }
@@ -141,67 +163,57 @@ internal fun EventsScreen(
     events: List<DomainEvent>,
     search: String = "",
     onSearch: (String) -> Unit = {},
+    onSwipe: () -> Unit ,
     modifier: Modifier = Modifier
 ) {
-    var keyword by remember { mutableStateOf(search) }
+    val context = LocalContext.current
+    val cartAction = SwipeAction(
+        icon = rememberVectorPainter(Icons.Filled.ShoppingCart),
+        background = Color.Green,
+        onSwipe = {
+            onSwipe()
+        }
+    )
 
-    Column(modifier) {
+    Column(modifier.fillMaxWidth()) {
 
-        Row(
+        var keyword by remember { mutableStateOf(search) }
+        TextField(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            TextField(
-                modifier = Modifier.weight(1f),
-                value = keyword,
-                onValueChange = { keyword = it },
-                trailingIcon = {
-                    IconButton(onClick = {
-                        keyword = ""
-                        onSearch(keyword)
-                    }) {
-                        Icon(Icons.Filled.Clear, contentDescription = "Clear")
-                    }
+                .padding(horizontal = 8.dp, vertical = 4.dp)
+                .semantics {
+                    contentDescription = "Search"
                 },
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-                keyboardActions = KeyboardActions(onSearch = { onSearch(keyword) }),
-            )
-        }
+            value = keyword,
+            singleLine = true,
+            onValueChange = { keyword = it },
+            trailingIcon = {
+                IconButton(onClick = {
+                    keyword = ""
+                    onSearch(keyword)
+                }) {
+                    Icon(Icons.Filled.Clear, contentDescription = "Clear")
+                }
+            },
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { onSearch(keyword) }),
+        )
 
         if (events.isEmpty()) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Card(
-                    modifier = Modifier.padding(16.dp)
-
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_search_off),
-                            contentDescription = "Not Found"
-                        )
-                        Text(
-                            text = "No events found!\nPlease try again with another keyword",
-                            style = MaterialTheme.typography.titleLarge,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.padding(8.dp)
-                        )
-                    }
-                }
-            }
+            NoEventsComposable()
         }
 
         if (events.isNotEmpty()) {
+            val lazyListState = rememberLazyListState()
+
             LazyColumn(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth(),
+
+                state = lazyListState
             ) {
+
                 item {
                     Text(
                         "Please, choose your Event!",
@@ -209,69 +221,86 @@ internal fun EventsScreen(
                         modifier = Modifier.padding(16.dp)
                     )
                 }
+
                 items(
                     items = events,
                     key = { it.id }) {
-                    Card(
-                        shape = RoundedCornerShape(8.dp),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { Log.d("EventsScreen", "Event clicked: $it") }
-                            .heightIn(max = 90.dp)
-                            .padding(vertical = 8.dp, horizontal = 12.dp)
+
+                    SwipeableActionsBox(
+                        startActions = listOf(cartAction),
                     ) {
-                        Row() {
-                            AsyncImage(
-                                model = it.image,
-                                contentDescription = it.name,
-                                contentScale = ContentScale.Crop,
-                                onState = {
-                                    if (it is AsyncImagePainter.State.Error) {
-                                        it.result.throwable.printStackTrace()
-                                    }
-                                },
-                                modifier = Modifier.size(90.dp, 90.dp)
-                                    .border(1.dp, MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(4.dp))
-                                    .clip(RoundedCornerShape(4.dp))
-                            )
-                            Column(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(horizontal = 8.dp, vertical = 12.dp)
-                                    .fillMaxWidth()
-                            ) {
-                                Text(it.name, style = MaterialTheme.typography.titleMedium)
-                                Text(it.type, style = MaterialTheme.typography.bodyMedium)
+
+                        Card(
+                            shape = RoundedCornerShape(8.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { Log.d("EventsScreen", "Event clicked: $it") }
+                                .heightIn(min = 90.dp)
+                                .padding(vertical = 8.dp, horizontal = 12.dp)
+                        ) {
+                            Row() {
+                                AsyncImage(
+                                    model = it.image,
+                                    contentDescription = it.name,
+                                    contentScale = ContentScale.Crop,
+                                    onState = {
+                                        if (it is AsyncImagePainter.State.Error) {
+                                            it.result.throwable.printStackTrace()
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .size(90.dp, 90.dp)
+                                        .border(
+                                            1.dp,
+                                            MaterialTheme.colorScheme.primary,
+                                            shape = RoundedCornerShape(4.dp)
+                                        )
+                                        .clip(RoundedCornerShape(4.dp))
+                                )
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(horizontal = 8.dp, vertical = 12.dp)
+                                        .fillMaxWidth()
+                                ) {
+                                    Text(it.name, style = MaterialTheme.typography.titleMedium)
+                                    Text(it.type, style = MaterialTheme.typography.bodyMedium)
+                                }
                             }
+
                         }
-
-
-
-//                        ListItem(
-//                            modifier = Modifier.fillMaxWidth(),
-//                            headlineContent = { Text(it.name) },
-//                            supportingContent = { Text(it.type) },
-//                            shadowElevation = 8.dp,
-//                            tonalElevation = 4.dp,
-//
-//                            leadingContent = {
-//                                AsyncImage(
-//                                    model = it.image,
-//                                    contentDescription = it.name,
-//                                    contentScale = ContentScale.Crop,
-//                                    onState = {
-//                                        if (it is AsyncImagePainter.State.Error) {
-//                                            it.result.throwable.printStackTrace()
-//                                        }
-//                                    },
-//                                    modifier = Modifier.size(80.dp, 80.dp)
-//                                        .border(1.dp, MaterialTheme.colorScheme.primary, shape = RoundedCornerShape(4.dp))
-//                                        .clip(RoundedCornerShape(4.dp)))
-//                            })
-
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun NoEventsComposable() {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        Card(
+            modifier = Modifier.padding(16.dp)
+
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    painter = painterResource(id = R.drawable.ic_search_off),
+                    contentDescription = "Not Found"
+                )
+                Text(
+                    text = "No events found!\nPlease try again with another keyword",
+                    style = MaterialTheme.typography.titleLarge,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(8.dp)
+                )
             }
         }
     }
@@ -283,7 +312,7 @@ internal fun EventsScreen(
 @Composable
 private fun DefaultPreview() {
     MyApplicationTheme {
-        EventsScreen(events = emptyList(), onSearch = {})
+        EventsScreen(events = emptyList(), onSearch = {}, onSwipe = {})
     }
 }
 
@@ -291,6 +320,6 @@ private fun DefaultPreview() {
 @Composable
 private fun PortraitPreview() {
     MyApplicationTheme {
-        EventsScreen(events = emptyList(), onSearch = {})
+        EventsScreen(events = emptyList(), onSearch = {}, onSwipe = {})
     }
 }

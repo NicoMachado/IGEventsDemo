@@ -38,7 +38,6 @@ interface DataModule {
 }
 
 class FakeEventsRepository @Inject constructor() : EventsRepository {
-    //val events: Flow<Result<List<DomainEvent>>> = flowOf(fakeEventss)
     override suspend fun getEventsByKeyword(keyword: String?): Result<List<DomainEvent>> {
         return Result.success(
             FAKE_EVENTS
@@ -49,21 +48,21 @@ class FakeEventsRepository @Inject constructor() : EventsRepository {
 val FAKE_EVENTS = listOf(
     DomainEvent(
         id  = "1",
-        "One",
+        name = "One",
         image = "http://example.com/one.jpg",
         type = "Music",
         url = "http://example.com/one"
     ),
     DomainEvent(
         id  = "2",
-        "Two",
+        name ="Two",
         image = "http://example.com/one.jpg",
         type = "Music",
         url = "http://example.com/one"
     ),
     DomainEvent(
         id  = "3",
-        "Three",
+        name = "Three",
         image = "http://example.com/one.jpg",
         type = "Music",
         url = "http://example.com/one"

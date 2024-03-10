@@ -17,6 +17,8 @@
 package com.insightglobal.demo.ui
 
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import org.junit.Rule
@@ -32,9 +34,9 @@ class NavigationTest {
     val composeTestRule = createAndroidComposeRule<MainActivity>()
 
     @Test
-    fun test1() {
-        // TODO: Add navigation tests
-        //composeTestRule.onNodeWithText(fakeEvents.first(), substring = true).assertExists()
+    fun testNavigationToMainScreen() {
+        //composeTestRule.onNodeWithContentDescription("main").assertExists()
+        composeTestRule.onNodeWithText("Simple TM Events List", ignoreCase = true).assertExists()
     }
 }
 
