@@ -1,33 +1,26 @@
-TicketMaster  - Code Challenge
+TicketMaster - Code Challenge
 
-Author : Nicolas Machado
+Author: Nicolas Machado
 
-I use for this solution the base android template, that allows me to speed up the development process.
+For this solution, I utilized the base Android template to accelerate the development process. It comes with preloaded packages including:
 
-It contains the following packages preloaded:
+- Dagger2/Hilt for Dependency Injection
+- Compose Libraries
+- Retrofit
 
-Dagger2/Hilt for DI
-Compose Libraries
-Retrofit
+I also incorporated the following libraries:
+- Coil for image loading
+- SWIPE effect library from [GitHub](https://github.com/saket/swipe). This library proved to be very helpful in implementing the swipe-to-left or swipe-to-right effect on the cards.
 
-I added the following libraries:
-Coil for image loading
+The project is structured into three main packages:
+1. data: Contains data sources and the repository.
+2. domain: Houses the use cases.
+3. ui: Comprises UI components.
 
+The project adheres to the MVVM architecture and leverages the Jetpack Compose library for the UI.
 
-The project is divided in 3 main packages:
-- data: contains the data sources and the repository
-- domain: contains the use cases
-- ui: contains the UI components
+The GitHub repository consists of two branches:
 
-The project is using the MVVM architecture, and the use of the Jetpack Compose library for the UI.
+1. main: Contains the solution for the code challenge using MVVM and MutableStateFlow for a UIState holder variable. It employs sealed interfaces to represent different states of the UI and facilitates the transmission of data from the UI to the ViewModel and vice versa.
 
-The repository in GitHub contains two branches:
--main: contains the solution for the code challenge using  mvvm and with MutableStateFlow of a UIState holder variable.
-Using sealed interfaces to represent the different states of the UI.
-And to pass down data to the UI, and pass up events from the UI to the ViewModel.
-
--MutableFlow-version.
-In this version I use savedStateHandle to observe the input of the user in the search field, and 
-use a MutableStateFlow to pass the data from the ViewModel to the UI.
-The search query is reactive to user input and you don't need to press enter on the keyboard.
-The entry is debounced 1500 ms to avoid making too many requests to the API.
+2. MutableFlow-version: In this version, I utilize savedStateHandle to observe user input in the search field and employ a MutableStateFlow to transmit data from the ViewModel to the UI. The search query reacts to user input in real-time without the need to press enter on the keyboard. Additionally, the entry is debounced for 1500 milliseconds to prevent excessive requests to the API.
